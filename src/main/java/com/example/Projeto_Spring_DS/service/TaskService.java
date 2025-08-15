@@ -49,4 +49,13 @@ public class TaskService {
         task1.setDueDate(task2.getDueDate());
         return task1;
     }
+
+    public void deleteTask(int id) {
+        int index = id - 1;
+        
+        if (index < 0 || index >= taskRepository.getTasks().size()) {
+            throw new ResourceNotFoundException("Tarefa com ID " + id + " não encontrada.");
+        }
+        taskRepository.getTasks().remove(index);
+    }
 }

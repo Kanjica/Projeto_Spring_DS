@@ -2,6 +2,7 @@ package com.example.Projeto_Spring_DS.controller;
 
 import java.util.List;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -41,5 +42,11 @@ class TaskController {
     @PutMapping("/update-{id}")
     public Task update(@PathVariable int id, @RequestBody Task taskDetails){
         return taskService.updateTask(id, taskDetails);
+    }
+
+    @DeleteMapping("/delete-{id}")
+    public String delete(@PathVariable int id){
+        taskService.deleteTask(id);
+        return "Task deleted successfully";
     }
 }
