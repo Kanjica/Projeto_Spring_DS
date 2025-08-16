@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Repository;
 
+import com.example.Projeto_Spring_DS.exception.ResourceNotFoundException;
 import com.example.Projeto_Spring_DS.model.Task;
 
 import lombok.AllArgsConstructor;
@@ -28,4 +29,12 @@ public class TaskRepository {
     public void setTasks(List<Task> tasks) {
         this.tasks = tasks;
     }
+
+    public Task getTaskById(int id) {
+        if (id <= 0 || id > tasks.size()) {
+            throw new ResourceNotFoundException("Tarefa com ID " + id + " não existe.");
+        }
+        return tasks.get(id - 1);
+    }
+
 }
