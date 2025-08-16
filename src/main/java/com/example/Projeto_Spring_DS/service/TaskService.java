@@ -20,7 +20,6 @@ public class TaskService {
 
     public Task toEntity(TaskRequestDTO taskRequestDTO) {
         Task task = new Task();
-        task.setId(taskRequestDTO.getId());
         task.setTitle(taskRequestDTO.getTitle());
         task.setDescription(taskRequestDTO.getDescription());
         task.setDueDate(taskRequestDTO.getDueDate());
@@ -39,24 +38,27 @@ public class TaskService {
     
     public TaskResponseDTO addTask(TaskRequestDTO requestDTO){
         Task task = toEntity(requestDTO);
-        Task savedTask = taskRepository.addTask(task);
+        Task savedTask = taskRepository.save(task);
         return toResponseDTO(savedTask);
     }
 
     public List<TaskResponseDTO> allTasks(){
-        return taskRepository.getTasks().stream()
+        return taskRepository.findAll().stream()
             .map(this::toResponseDTO)
             .toList();
     }
 
-    public TaskResponseDTO getTaskById(int id) {
-        Task task = taskRepository.getTaskById(id);
+    public TaskResponseDTO getTaskById(Long id) {
+        Task task = taskRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Tarefa com ID " + id + " não encontrada."));
         return toResponseDTO(task);
     }
 
-    public TaskResponseDTO updateTask(int id, TaskRequestDTO taskDetails) {
-        Task task = taskRepository.getTaskById(id);
+    public TaskResponseDTO updateTask(Long id, TaskRequestDTO taskDetails) {
+        Task task = taskRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Tarefa com ID " + id + " não encontrada."));
         setTask(task, toEntity(taskDetails));
+        taskRepository.save(task);
         return toResponseDTO(task);
     }
     
@@ -68,12 +70,9 @@ public class TaskService {
         return task1;
     }
 
-    public void deleteTask(int id) {
-        int index = id - 1;
-        
-        if (index < 0 || index >= taskRepository.getTasks().size()) {
-            throw new ResourceNotFoundException("Tarefa com ID " + id + " não encontrada.");
-        }
-        taskRepository.getTasks().remove(index);
+    public void deleteTask(Long id) {
+        Task task = taskRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Tarefa com ID " + id + " não encontrada."));
+        taskRepository.delete(task);
     }
 }

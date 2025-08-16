@@ -13,13 +13,10 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 @AllArgsConstructor
 @NoArgsConstructor
 public class TaskRequestDTO {
-
-    @Positive
-    private int id;
     @NotBlank(message = "O título não pode estar em branco")
     private String title;
 
-    @Size(max = 200, message = "A descrição não pode ter mais de 200 caracteres")
+    @Size(max = 500, message = "A descrição não pode ter mais de 200 caracteres")
     private String description;
 
     @FutureOrPresent(message = "A data de vencimento não pode ser no passado")

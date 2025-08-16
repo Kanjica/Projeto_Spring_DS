@@ -1,40 +1,14 @@
 package com.example.Projeto_Spring_DS.repository;
 
-import java.util.ArrayList;
+import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-
-import com.example.Projeto_Spring_DS.exception.ResourceNotFoundException;
 import com.example.Projeto_Spring_DS.model.Task;
-
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-
 @Repository
-@NoArgsConstructor
-@AllArgsConstructor
-public class TaskRepository {
-    private List<Task> tasks = new ArrayList<>();
-
-    public Task addTask(Task task){
-        this.tasks.add(task);
-        return task;
-    }
-
-    public List<Task> getTasks() {
-        return tasks;
-    }
-
-    public void setTasks(List<Task> tasks) {
-        this.tasks = tasks;
-    }
-
-    public Task getTaskById(int id) {
-        if (id <= 0 || id > tasks.size()) {
-            throw new ResourceNotFoundException("Tarefa com ID " + id + " não existe.");
-        }
-        return tasks.get(id - 1);
-    }
-
+public interface TaskRepository extends JpaRepository<Task, Long> {
+    List<Task> findByCompleted(boolean completed);
+    List<Task> findByDueDateBefore(LocalDateTime date);
 }
+
