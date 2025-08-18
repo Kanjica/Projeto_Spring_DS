@@ -42,7 +42,7 @@ public class TaskService {
         return toResponseDTO(savedTask);
     }
 
-    public List<TaskResponseDTO> allTasks(){
+    public List<TaskResponseDTO> listAllTasks(){
         return taskRepository.findAll().stream()
             .map(this::toResponseDTO)
             .toList();

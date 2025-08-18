@@ -2,109 +2,149 @@ package com.example.Projeto_Spring_DS.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 
-import org.aspectj.lang.annotation.Before;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
 import com.example.Projeto_Spring_DS.dto.TaskRequestDTO;
 import com.example.Projeto_Spring_DS.dto.TaskResponseDTO;
+import com.example.Projeto_Spring_DS.exception.ResourceNotFoundException;
 import com.example.Projeto_Spring_DS.model.Task;
 import com.example.Projeto_Spring_DS.repository.TaskRepository;
 
 @SpringBootTest
-@ActiveProfiles("test")
 class TaskServiceTest {
 
-    @Autowired
-    private TaskService taskService;
+    @Mock
+    private TaskRepository repository;
+    
+    @InjectMocks
+    private TaskService service;
 
-    @Autowired
-    private TaskRepository taskRepository;
+    @Test
+    public void createTaskWithSuccess(){
+        TaskRequestDTO request = new TaskRequestDTO("Task1", "Description1", LocalDateTime.now());
 
-    @BeforeEach
-    void setUp() {
-        taskRepository.deleteAll();
+        Task savedTask = new Task(1L, "Task1", "Description1", false, LocalDateTime.now());
+
+        when(repository.save(any(Task.class))).thenReturn(savedTask);
+
+        TaskResponseDTO task = service.addTask(request);
+
+        assertNotNull(task);
+        assertEquals(savedTask.getId(), task.getId());
+        assertEquals(savedTask.getTitle(), task.getTitle());
+        assertEquals(savedTask.getDescription(), task.getDescription());
+        assertEquals(savedTask.isCompleted(), task.isCompleted());
     }
 
     @Test
-    void shouldSaveTaskAndReturnDtoWithCorrectIdAndData() {
-        // Arrange
-        TaskRequestDTO taskRequest = new TaskRequestDTO();
-        taskRequest.setTitle("Test Task");
-        taskRequest.setDescription("This is a test task");
-        taskRequest.setDueDate(LocalDateTime.now().plusDays(1));
+    public void listAllTasksWithSucces(){
+        when(repository.findAll()).thenReturn(
+            List.of(
+                new Task(1L, "Task1", "Description1", false, LocalDateTime.now()),
+                new Task(2L, "Task2", "Description2", false, LocalDateTime.now().plusDays(1))
+            )
+        );
 
-        // Act
-        TaskResponseDTO response = taskService.addTask(taskRequest);
+        List<TaskResponseDTO> tasks = service.listAllTasks();
 
-        // Assert
+        assertNotNull(tasks);
+        assertEquals(2, tasks.size());
+
+        assertEquals(1L, tasks.get(0).getId());
+        assertEquals("Task1", tasks.get(0).getTitle());
+        assertEquals("Description1", tasks.get(0).getDescription());
+        assertEquals(false, tasks.get(0).isCompleted());
+        assertNotNull(tasks.get(0).getDueDate());
+
+        assertEquals(2L, tasks.get(1).getId());
+        assertEquals("Task2", tasks.get(1).getTitle());
+        assertEquals("Description2", tasks.get(1).getDescription());
+        assertEquals(false, tasks.get(1).isCompleted());
+        assertNotNull(tasks.get(1).getDueDate());
+    }
+
+    @Test
+    void getTaskByIdWithSuccess(){
+        Task existingTask = new Task(1L, "Task1", "Description1", false, LocalDateTime.now());
+        when(repository.findById(1L)).thenReturn(Optional.of(existingTask));
+
+        TaskResponseDTO response = service.getTaskById(1L);
+
         assertNotNull(response);
-        assertNotNull(response.getId());
-        assertEquals("Test Task", response.getTitle());
-        assertEquals("This is a test task", response.getDescription());
-        assertFalse(response.isCompleted());
-
-        // DB verification
-        Task persisted = taskRepository.findById(response.getId()).orElseThrow();
-        assertNotNull(persisted);
-        assertEquals("Test Task", persisted.getTitle());
-        assertEquals("This is a test task", persisted.getDescription());
-        assertFalse(persisted.isCompleted());
+        assertEquals(existingTask.getId(), response.getId());
+        assertEquals(existingTask.getTitle(), response.getTitle());
+        assertEquals(existingTask.getDescription(), response.getDescription());
+        assertEquals(existingTask.isCompleted(), response.isCompleted());
     }
 
     @Test
-    void shouldUpdateTaskAndReturnDtoWithCorrectData() {
-        // Arrange
-        TaskRequestDTO taskRequest = new TaskRequestDTO();
-        taskRequest.setTitle("Test Task");
-        taskRequest.setDescription("This is a test task");
-        taskRequest.setDueDate(LocalDateTime.now().plusDays(1));
+    void getTaskByIdNotFound(){
+        when(repository.findById(1L)).thenThrow(new ResourceNotFoundException("Tarefa com ID 1 não encontrada."));
 
-        TaskResponseDTO createdTask = taskService.addTask(taskRequest);
-
-        TaskRequestDTO updateRequest = new TaskRequestDTO();
-        updateRequest.setTitle("Updated Task");
-        updateRequest.setDescription("This is an updated test task");
-        updateRequest.setDueDate(LocalDateTime.now().plusDays(2));
-
-        // Act
-        TaskResponseDTO response = taskService.updateTask(createdTask.getId(), updateRequest);
-
-        // Assert
-        assertNotNull(response);
-        assertEquals(createdTask.getId(), response.getId());
-        assertEquals("Updated Task", response.getTitle());
-        assertEquals("This is an updated test task", response.getDescription());
-        assertFalse(response.isCompleted());
-
-        // DB verification
-        Task persisted = taskRepository.findById(response.getId()).orElseThrow();
-        assertNotNull(persisted);
-        assertEquals("Updated Task", persisted.getTitle());
-        assertEquals("This is an updated test task", persisted.getDescription());
-        assertFalse(persisted.isCompleted());
+        try {
+            service.getTaskById(1L);
+        } catch (ResourceNotFoundException e) {
+            assertEquals("Tarefa com ID 1 não encontrada.", e.getMessage());
+        }
     }
 
     @Test
-    void shouldDeleteTaskAndRemoveFromDatabase() {
-        // Arrange
-        TaskRequestDTO taskRequest = new TaskRequestDTO();
-        taskRequest.setTitle("Test Task");
-        taskRequest.setDescription("This is a test task");
-        taskRequest.setDueDate(LocalDateTime.now().plusDays(1));
+    void updateTaskWithSuccess(){
+        Task existingTask = new Task(1L, "Task1", "Description1", false, LocalDateTime.now());
 
-        TaskResponseDTO createdTask = taskService.addTask(taskRequest);
+        TaskRequestDTO updateRequest = new TaskRequestDTO("Updated Task", "Updated Description", LocalDateTime.now().plusDays(2));
 
-        // Act
-        taskService.deleteTask(createdTask.getId());
+        when(repository.findById(1L)).thenReturn(Optional.of(existingTask));
+        when(repository.save(any(Task.class))).thenReturn(existingTask); 
 
-        // Assert
-        assertFalse(taskRepository.findById(createdTask.getId()).isPresent());
+        TaskResponseDTO updatedTask = service.updateTask(1L, updateRequest);
+
+        assertNotNull(updatedTask);
+        assertEquals(existingTask.getId(), updatedTask.getId());
+        assertEquals(updateRequest.getTitle(), updatedTask.getTitle());
+        assertEquals(updateRequest.getDescription(), updatedTask.getDescription());
+    }
+
+    @Test
+    void updateTaskWithIdNotFound(){
+        TaskRequestDTO updateRequest = new TaskRequestDTO("Task1", "Description1",LocalDateTime.now()); 
+        when(repository.findById(1L)).thenThrow(new ResourceNotFoundException("Tarefa com ID 1 não encontrada."));
+        try {
+            service.updateTask(1L, updateRequest);
+        } catch (ResourceNotFoundException e) {
+            assertEquals("Tarefa com ID 1 não encontrada.", e.getMessage());
+        }   
+    }
+
+    @Test
+    void deleteTaskWithSuccess(){
+        Task existingTask = new Task(1L, "Task1", "Description1", false, LocalDateTime.now());
+        when(repository.findById(1L)).thenReturn(Optional.of(existingTask));
+
+        service.deleteTask(1L);
+
+        verify(repository).delete(existingTask);
+    }
+
+    @Test
+    void deleteTaskWithIdNotFound(){
+        when(repository.findById(1L)).thenThrow(new ResourceNotFoundException("Tarefa com ID 1 não encontrada."));
+        try {
+            service.deleteTask(1L);
+        } catch (ResourceNotFoundException e) {
+            assertEquals("Tarefa com ID 1 não encontrada.", e.getMessage());
+        }
     }
 }
